@@ -1,18 +1,22 @@
 package org.furthemore.apisregister;
 
+import android.Manifest;
 import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.ActivityNotFoundException;
-import android.content.BroadcastReceiver;
-import android.content.Context;
+
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
 import android.graphics.Color;
+import android.os.AsyncTask;
 import android.os.Looper;
 import android.preference.PreferenceManager;
+import android.support.v4.app.ActivityCompat;
+import android.support.v4.content.ContextCompat;
 import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
@@ -26,29 +30,30 @@ import android.widget.Button;
 import android.widget.TextClock;
 import android.widget.Toast;
 
+
 import com.android.volley.AuthFailureError;
 import com.android.volley.NetworkResponse;
 import com.android.volley.Request;
 import com.android.volley.Response;
 import com.android.volley.VolleyError;
-import com.android.volley.VolleyLog;
 import com.android.volley.toolbox.HttpHeaderParser;
-import com.android.volley.toolbox.JsonObjectRequest;
 import com.android.volley.toolbox.StringRequest;
-import com.google.firebase.iid.FirebaseInstanceId;
-import com.google.firebase.messaging.FirebaseMessagingService;
-import com.google.firebase.messaging.RemoteMessage;
 import com.squareup.sdk.pos.ChargeRequest;
 import com.squareup.sdk.pos.CurrencyCode;
 import com.squareup.sdk.pos.PosSdk;
 import com.squareup.sdk.pos.PosClient;
 
-import org.json.JSONException;
-import org.json.JSONObject;
-
-import java.io.UnsupportedEncodingException;
+import java.io.IOException;
+import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.net.URLEncoder;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
+
+import me.pushy.sdk.Pushy;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
@@ -74,9 +79,26 @@ public class FullscreenActivity extends AppCompatActivity {
 
     private static final int CHARGE_REQUEST_CODE = 1;
 
+    private static final String base_url = "http://dawningbrooke.net/apis";
+
     private PosClient posClient;
 
     private String html = "";
+
+    private String note = "";
+    private int charge_total = 0;
+
+    public String getReference() {
+        return reference;
+    }
+
+    public void setReference(String reference) {
+        this.reference = reference;
+    }
+
+    private String reference = "";
+
+    private PushReceiver pushreceiver = null;
 
     /**
      * Some older devices needs a small delay between UI widget updates
@@ -98,7 +120,7 @@ public class FullscreenActivity extends AppCompatActivity {
                     | View.SYSTEM_UI_FLAG_FULLSCREEN
                     | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
                     | View.SYSTEM_UI_FLAG_LAYOUT_STABLE
-                    | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
+                    | View.SYSTEM_UI_FLAG_IMMERSIVE
                     | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
                     | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION);
         }
@@ -141,14 +163,39 @@ public class FullscreenActivity extends AppCompatActivity {
         return this.html;
     }
 
+    @Override
+    public SharedPreferences getSharedPreferences(String name, int mode) {
+        return super.getSharedPreferences(name, mode);
+    }
+
     protected void setHtml(String html) {
         this.html = html;
+
+        SharedPreferences prefs =
+                PreferenceManager.getDefaultSharedPreferences(getBaseContext());
+        WebView receipt = findViewById(R.id.receipt_view);
+        html = formatHTML(prefs, this.html);
+        receipt.loadDataWithBaseURL(null, html, "text/html", "utf-8", null);
+    }
+
+    public String getNote() {
+        return note;
+    }
+
+    public void setNote(String note) {
+        this.note = note;
+    }
+
+    public int getCharge_total() {
+        return charge_total;
+    }
+
+    public void setCharge_total(int charge_total) {
+        this.charge_total = charge_total;
     }
 
     protected void onUpdate() {
         // Handle updating of preferences and settings
-        String token = FirebaseInstanceId.getInstance().getToken();
-        Log.d("ChargeAssistant", "Token: " + token);
 
         SharedPreferences prefs =
                 PreferenceManager.getDefaultSharedPreferences(getBaseContext());
@@ -184,8 +231,6 @@ public class FullscreenActivity extends AppCompatActivity {
             }
         }
 
-        updateFirebaseToken();
-
     }
 
     protected String formatHTML(SharedPreferences prefs, String body) {
@@ -201,95 +246,69 @@ public class FullscreenActivity extends AppCompatActivity {
         return html;
     }
 
-    protected void updateFirebaseToken() {
-        final String token = FirebaseInstanceId.getInstance().getToken();
-        Log.d("ChargeAssistant", "Token: " + token);
+    private class RegisterForPushNotificationsAsync extends AsyncTask<Void, Void, Exception> {
+        protected Exception doInBackground(Void... params) {
+            try {
+                // Assign a unique token to this device
+                final String deviceToken = Pushy.register(getApplicationContext());
 
-        String url = "http://dawningbrooke.net/apis/registration/firebase/register";
+                // Log it for debugging purposes
+                Log.d("MyApp", "Pushy device token: " + deviceToken);
 
-        SharedPreferences prefs =
-                PreferenceManager.getDefaultSharedPreferences(getBaseContext());
-        final String terminal_name = prefs.getString("terminal_name", "Unnamed");
+                String url = base_url + "/registration/firebase/register";
 
-        StringRequest stringRequest = new StringRequest(Request.Method.POST, url, new Response.Listener<String>() {
-            @Override
-            public void onResponse(String response) {
-                Log.i("VOLLEY", response);
-            }
-        }, new Response.ErrorListener() {
-            @Override
-            public void onErrorResponse(VolleyError error) {
-                Log.e("VOLLEY", error.toString());
-                Toast.makeText(getApplicationContext(),"Register with server: " + error.toString(), Toast.LENGTH_SHORT).show();
-            }
-        }) {
+                SharedPreferences prefs =
+                        PreferenceManager.getDefaultSharedPreferences(getBaseContext());
+                final String terminal_name = URLEncoder.encode(prefs.getString("terminal_name", "Unnamed"));
 
-
-            @Override
-            protected Map<String, String> getParams() throws AuthFailureError {
-                Map<String, String> data = new HashMap<String, String>();
-                data.put("key", (String) BuildConfig.APIS_API_KEY.toString());
-                data.put("token", token);
-                data.put("name", terminal_name);
-                return data;
-            }
-
-            @Override
-            public String getBodyContentType() {
-                return "application/x-www-form-urlencoded; charset=UTF-8";
-            }
-
-            @Override
-            protected Response<String> parseNetworkResponse(NetworkResponse response) {
-                String responseString = "";
-                if (response != null) {
-                    responseString = String.valueOf(response.statusCode);
-                    // can get more details such as response.headers
-                    //Toast.makeText(getApplicationContext(),"Register with server: " + responseString, Toast.LENGTH_SHORT).show();
-                }
-                return Response.success(responseString, HttpHeaderParser.parseCacheHeaders(response));
-            }
-        };
-
-        // Access the RequestQueue through your singleton class.
-        MySingleton.getInstance(this).addToRequestQueue(stringRequest);
-    }
-
-    private BroadcastReceiver mMessageReceiver = new BroadcastReceiver() {
-        @Override
-        public void onReceive(Context context, Intent intent) {
-            // Get extra data included in the Intent
-            String message = intent.getStringExtra("command");
-            Log.d("mMessageReceiver", "Got Firebase command: " + message);
-
-            Bundle extras = intent.getExtras();
-            if (extras != null) {
-                Button payment_button = findViewById(R.id.payment_button);
-                String command = extras.getString("command");
-                if ("clear".equals(command)) {
-                    payment_button.setVisibility(View.GONE);
-                    setHtml("");
-                } else if ("display".equals(command)) {
-                    setHtml(extras.getString("html"));
-
-                    int amount = extras.getInt("amount");
-                    String note = extras.getString("note");
-
-                    payment_button.setVisibility(View.VISIBLE);
-                }
-
-                onUpdate();
+                // this doesn't seem to work - defer registration until the name is set
+                new URL(url + "?token=" + deviceToken
+                            + "&key=" + BuildConfig.APIS_API_KEY.toString()
+                            + "&name=" + terminal_name).openConnection();
 
             }
+            catch (Exception exc) {
+                // Return exc to onPostExecute
+                return exc;
+            }
+
+            // Success
+            return null;
         }
-    };
+
+        @Override
+        protected void onPostExecute(Exception exc) {
+            // Failed?
+            if (exc != null) {
+                // Show error as toast message
+                Toast.makeText(getApplicationContext(), exc.toString(), Toast.LENGTH_LONG).show();
+                return;
+            }
+
+            // Succeeded, do something to alert the user
+        }
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        LocalBroadcastManager.getInstance(this).registerReceiver(mMessageReceiver,
-                new IntentFilter("onMessageReceived"));
+        // Dynamically create the PushReceiver so that the main activity is accessible to it
+        pushreceiver= new PushReceiver();
+        pushreceiver.setActivityHandler(this);
+        IntentFilter filter = new IntentFilter();
+        filter.addAction("pushy.me");
+        registerReceiver(pushreceiver, filter);
+
+        Pushy.toggleWifiPolicyCompliance(false, this);
+        Pushy.listen(this);
+
+        // Check whether the user has granted us the READ/WRITE_EXTERNAL_STORAGE permissions
+        if (ContextCompat.checkSelfPermission(getApplicationContext(), Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+            // Request both READ_EXTERNAL_STORAGE and WRITE_EXTERNAL_STORAGE so that the
+            // Pushy SDK will be able to persist the device token in the external storage
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.READ_EXTERNAL_STORAGE, Manifest.permission.WRITE_EXTERNAL_STORAGE}, 0);
+        }
 
         setContentView(R.layout.activity_fullscreen);
 
@@ -298,8 +317,7 @@ public class FullscreenActivity extends AppCompatActivity {
         mContentView = findViewById(R.id.fullscreen_content);
         Button payment_button = findViewById(R.id.payment_button);
 
-        String token = FirebaseInstanceId.getInstance().getToken();
-        Log.d("ChargeAssistant", "Token: " + token);
+        new RegisterForPushNotificationsAsync().execute();
 
         payment_button.setVisibility(View.GONE);
 
@@ -312,7 +330,16 @@ public class FullscreenActivity extends AppCompatActivity {
                 PreferenceManager.getDefaultSharedPreferences(getBaseContext());
         prefListener = new SharedPreferences.OnSharedPreferenceChangeListener() {
             public void onSharedPreferenceChanged(SharedPreferences prefs, String key) {
+                Log.d("ConfigChange", "Configuration change detected for " + key);
                 onUpdate();
+
+                if ("terminal_name".equals(key)) {
+                    // Update the server with the pushy token and new terminal name
+                    String terminalName = prefs.getString("terminal_name", "Unnamed");
+                    String deviceToken = prefs.getString("pushyToken", "NO_TOKEN");
+
+                    registerWithServer(deviceToken, terminalName);
+                }
             }
         };
         prefs.registerOnSharedPreferenceChangeListener(prefListener);
@@ -335,6 +362,42 @@ public class FullscreenActivity extends AppCompatActivity {
 
         WebView webview = findViewById(R.id.web_view);
         webview.getSettings().setJavaScriptEnabled(true);
+
+    }
+
+    protected void registerWithServer(String token, String name) {
+        String url = base_url + "/registration/firebase/register";
+
+        url += "?token=" + token
+                + "&key=" + BuildConfig.APIS_API_KEY.toString()
+                + "&name=" + name;
+
+        StringRequest stringRequest = new StringRequest(Request.Method.GET, url, new Response.Listener<String>() {
+            @Override
+            public void onResponse(String response) {
+                Log.i("VOLLEY", response);
+            }
+        }, new Response.ErrorListener() {
+            @Override
+            public void onErrorResponse(VolleyError error) {
+                Log.e("VOLLEY", error.toString());
+                //Toast.makeText(getApplicationContext(),"Register with server: " + error.toString(), Toast.LENGTH_SHORT).show();
+            }
+        }) {
+            @Override
+            protected Response<String> parseNetworkResponse(NetworkResponse response) {
+                String responseString = "";
+                if (response != null) {
+                    responseString = String.valueOf(response.statusCode);
+                    Log.d("ConfigChange", "Register with server: " + responseString);
+                    //Toast.makeText(getApplicationContext(),"Successfully registered new name with server", Toast.LENGTH_SHORT).show();
+                }
+                return Response.success(responseString, HttpHeaderParser.parseCacheHeaders(response));
+            }
+        };
+
+        // Access the RequestQueue through your singleton class.
+        MySingleton.getInstance(this).addToRequestQueue(stringRequest);
 
     }
 
@@ -399,8 +462,9 @@ public class FullscreenActivity extends AppCompatActivity {
 
     @Override
     protected void onDestroy() {
-        // Unregister since the activity is about to be closed.
-        LocalBroadcastManager.getInstance(this).unregisterReceiver(mMessageReceiver);
+        if (pushreceiver != null) {
+            unregisterReceiver(pushreceiver);
+        }
         super.onDestroy();
     }
 
@@ -412,13 +476,40 @@ public class FullscreenActivity extends AppCompatActivity {
     }
 
     public void testSquareCharge(View view) {
-        startTransaction(1_00, "Test transaction");
+        int total = this.getCharge_total();
+        SharedPreferences prefs =
+                PreferenceManager.getDefaultSharedPreferences(getBaseContext());
+
+        boolean test_mode = prefs.getBoolean("test_mode", false);
+        if (test_mode) {
+            total = 1_00;
+        }
+
+        startTransaction(total, "Test transaction");
     }
 
-    private void startTransaction(int dollarAmount, String note) {
+    public void startTransaction(int dollarAmount, String note) {
+        Set<ChargeRequest.TenderType> tenderTypes = EnumSet.noneOf(ChargeRequest.TenderType.class);
+        SharedPreferences prefs =
+                PreferenceManager.getDefaultSharedPreferences(getBaseContext());
+
+        tenderTypes.add(ChargeRequest.TenderType.CARD);
+        boolean allow_cash = prefs.getBoolean("cash_payment", false);
+        if (allow_cash) {
+            tenderTypes.add(ChargeRequest.TenderType.CASH);
+        }
+
+        String location_id = prefs.getString("location_id", "");
+        boolean force_location = prefs.getBoolean("force_location", false);
+        if (force_location) {
+            location_id = "";
+        }
+
         ChargeRequest request = new ChargeRequest.Builder(dollarAmount, CurrencyCode.USD)
                 .note("note")
                 .autoReturn(3_200, MILLISECONDS)
+                .restrictTendersTo(tenderTypes)
+                .requestMetadata(this.getReference())
                 .build();
 
         try {
@@ -429,6 +520,42 @@ public class FullscreenActivity extends AppCompatActivity {
             posClient.openPointOfSalePlayStoreListing();
         }
 
+    }
+
+    protected void completeTransaction(String reference, String clientTransactionId, String serverTransactionId) {
+        String url = base_url + "/registration/firebase/register";
+
+        url += "?reference=" +  reference
+                + "&key=" + BuildConfig.APIS_API_KEY.toString()
+                + "&clientTransactionId=" + clientTransactionId;
+
+        if (serverTransactionId != null) {
+            url += "&serverTransactionId";
+        }
+
+        StringRequest stringRequest = new StringRequest(Request.Method.GET, url, new Response.Listener<String>() {
+            @Override
+            public void onResponse(String response) {
+                Log.i("VOLLEY", response);
+            }
+        }, new Response.ErrorListener() {
+            @Override
+            public void onErrorResponse(VolleyError error) {
+                Log.e("VOLLEY", error.toString());
+            }
+        }) {
+            @Override
+            protected Response<String> parseNetworkResponse(NetworkResponse response) {
+                String responseString = "";
+                if (response != null) {
+                    responseString = String.valueOf(response.statusCode);
+                    Log.d("CompleteTransaction", "Complete transaction server response: " + responseString);
+                }
+                return Response.success(responseString, HttpHeaderParser.parseCacheHeaders(response));
+            }
+        };
+
+        MySingleton.getInstance(this).addToRequestQueue(stringRequest);
     }
 
     private void showDialog(String title, String message, DialogInterface.OnClickListener listener) {
@@ -456,9 +583,15 @@ public class FullscreenActivity extends AppCompatActivity {
                 ChargeRequest.Success success = posClient.parseChargeSuccess(data);
                 String message = "Client transaction id: " + success.clientTransactionId;
                 Toast.makeText(this, "Success, " + message, Toast.LENGTH_LONG).show();
+
+                this.completeTransaction(success.requestMetadata, success.clientTransactionId, success.serverTransactionId);
             } else {
                 ChargeRequest.Error error = posClient.parseChargeError(data);
-                showDialog("Error: " + error.code, error.debugDescription, null);
+                Log.i("Square", "Square error: '" + error.code + "'");
+                // TRANSACTION_CANCELED
+                if (error.code != ChargeRequest.ErrorCode.TRANSACTION_CANCELED) {
+                    showDialog("Error: " + error.code, error.debugDescription, null);
+                }
             }
         }
     }

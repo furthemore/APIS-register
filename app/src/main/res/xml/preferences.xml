@@ -14,6 +14,20 @@
             android:defaultValue="false"
             android:key="cash_payment"
             android:title="Enable Cash Payment" />
+        <SwitchPreference
+            android:defaultValue="false"
+            android:key="force_location"
+            android:title="Enforce business location" />
+        <EditTextPreference
+            android:defaultValue="Default value"
+            android:key="location_id"
+            android:selectAllOnFocus="true"
+            android:singleLine="true"
+            android:title="Square Location ID" />
+        <SwitchPreference
+            android:defaultValue="false"
+            android:key="test_mode"
+            android:title="Transaction test mode ($1 transactions)" />
         <com.rarepebble.colorpicker.ColorPreference
             android:defaultValue="#0099cc"
             colorpicker_showAlpha="false"
