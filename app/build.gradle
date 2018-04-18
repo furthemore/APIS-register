@@ -9,15 +9,18 @@ android {
         versionCode 1
         versionName "1.0"
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
+        vectorDrawables.useSupportLibrary = true
     }
     buildTypes {
         release {
             it.buildConfigField "String", "SQUARE_CLIENT_ID", SquareClientId
+            it.buildConfigField "String", "APIS_API_KEY", APISApiKey
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
         debug {
             it.buildConfigField "String", "SQUARE_CLIENT_ID", SquareClientId
+            it.buildConfigField "String", "APIS_API_KEY", APISApiKey
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
@@ -29,11 +32,18 @@ dependencies {
     implementation 'com.android.support:appcompat-v7:26.1.0'
     implementation 'com.android.support:support-v4:26.1.0'
     implementation 'com.android.support.constraint:constraint-layout:1.0.2'
+    implementation 'com.android.support:support-vector-drawable:26.1.0'
+    implementation 'me.pushy:sdk:1.0.32'
+    //implementation 'com.google.firebase:firebase-messaging:11.8.0'
     testImplementation 'junit:junit:4.12'
     androidTestImplementation 'com.android.support.test:runner:1.0.1'
     androidTestImplementation 'com.android.support.test.espresso:espresso-core:3.0.1'
 
-    compile 'com.github.gcacace:signature-pad:1.2.1'
-    compile 'com.google.firebase:firebase-messaging:11.8.0'
-    compile 'com.squareup.sdk:point-of-sale-sdk:2.0'
+    api 'com.github.gcacace:signature-pad:1.2.1'
+    api 'com.rarepebble:colorpicker:2.3.1'
+
+    api 'com.squareup.sdk:point-of-sale-sdk:2.0'
+    api 'com.android.volley:volley:1.1.0'
 }
+
+apply plugin: 'com.google.gms.google-services'

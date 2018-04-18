@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+    <PreferenceCategory
+        android:title="General Settings"
+        android:key="general_settings">
+
+        <EditTextPreference
+            android:defaultValue="Terminal 1"
+            android:key="terminal_name"
+            android:selectAllOnFocus="true"
+            android:singleLine="true"
+            android:title="Terminal Name" />
+        <SwitchPreference
+            android:defaultValue="false"
+            android:key="cash_payment"
+            android:title="Enable Cash Payment" />
+        <com.rarepebble.colorpicker.ColorPreference
+            android:defaultValue="#0099cc"
+            colorpicker_showAlpha="false"
+            android:key="background_color"
+            android:title="Background Color" />
+        <com.rarepebble.colorpicker.ColorPreference
+            android:defaultValue="#fff"
+            colorpicker_showAlpha="false"
+            android:key="foreground_color"
+            android:title="Foreground Color" />
+        <EditTextPreference
+            android:defaultValue="https://www.furthemore.org/policies/code-of-conduct/"
+            android:key="webview_url"
+            android:selectAllOnFocus="true"
+            android:singleLine="true"
+            android:title="WebView URL" />
+        <SwitchPreference
+            android:defaultValue="false"
+            android:key="position_closed"
+            android:title="Position closed" />
+    </PreferenceCategory>
+</PreferenceScreen>

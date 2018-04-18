@@ -33,24 +33,31 @@
                 android:name="android.support.PARENT_ACTIVITY"
                 android:value="org.furthemore.apisregister.FullscreenActivity" />
         </activity>
-        <activity android:name=".test"></activity>
+        <activity android:name=".test" />
 
-        <service
-            android:name=".ChargeService">
+        <service android:name=".ChargeService">
             <intent-filter>
-                <action android:name="com.google.firebase.MESSAGING_EVENT"/>
+                <action android:name="com.google.firebase.MESSAGING_EVENT" />
             </intent-filter>
         </service>
-        <service
-            android:name=".IdService">
+        <service android:name=".IdService">
             <intent-filter>
-                <action android:name="com.google.firebase.INSTANCE_ID_EVENT"/>
+                <action android:name="com.google.firebase.INSTANCE_ID_EVENT" />
             </intent-filter>
         </service>
 
         <meta-data
             android:name="com.google.firebase.messaging.default_notification_color"
             android:resource="@color/colorAccent" />
+
+        <activity
+            android:name=".SettingsActivity"
+            android:label="@string/title_activity_settings"
+            android:parentActivityName=".FullscreenActivity">
+            <meta-data
+                android:name="android.support.PARENT_ACTIVITY"
+                android:value="org.furthemore.apisregister.FullscreenActivity" />
+        </activity>
     </application>
 
 </manifest>
