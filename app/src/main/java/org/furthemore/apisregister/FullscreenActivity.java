@@ -12,6 +12,9 @@ import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
+import android.media.Ringtone;
+import android.media.RingtoneManager;
+import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Looper;
 import android.preference.PreferenceManager;
@@ -79,7 +82,8 @@ public class FullscreenActivity extends AppCompatActivity {
 
     private static final int CHARGE_REQUEST_CODE = 1;
 
-    private static final String base_url = "http://dawningbrooke.net/apis";
+    private final String DEFAULT_BASE_URL = "http://dawningbrooke.net/apis";
+    private  String base_url = "http://dawningbrooke.net/apis";
 
     private PosClient posClient;
 
@@ -340,9 +344,15 @@ public class FullscreenActivity extends AppCompatActivity {
 
                     registerWithServer(deviceToken, terminalName);
                 }
+
+                if ("base_url".equals(key)) {
+                    base_url = prefs.getString("base_url", DEFAULT_BASE_URL);
+                }
             }
         };
         prefs.registerOnSharedPreferenceChangeListener(prefListener);
+
+        this.base_url = prefs.getString("base_url", DEFAULT_BASE_URL);
 
 
         // Set up the user interaction to manually show or hide the system UI.
@@ -585,6 +595,15 @@ public class FullscreenActivity extends AppCompatActivity {
                 Toast.makeText(this, "Success, " + message, Toast.LENGTH_LONG).show();
 
                 this.completeTransaction(success.requestMetadata, success.clientTransactionId, success.serverTransactionId);
+
+                try {
+                    Uri notification = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
+                    Ringtone r = RingtoneManager.getRingtone(getApplicationContext(), notification);
+                    r.play();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+
             } else {
                 ChargeRequest.Error error = posClient.parseChargeError(data);
                 Log.i("Square", "Square error: '" + error.code + "'");

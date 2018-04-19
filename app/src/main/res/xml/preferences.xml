@@ -5,6 +5,12 @@
         android:key="general_settings">
 
         <EditTextPreference
+            android:defaultValue="http://dawningbrooke.net/apis/registration"
+            android:key="edit_text_preference_1"
+            android:selectAllOnFocus="true"
+            android:singleLine="true"
+            android:title="API Base URL" />
+        <EditTextPreference
             android:defaultValue="Terminal 1"
             android:key="terminal_name"
             android:selectAllOnFocus="true"
