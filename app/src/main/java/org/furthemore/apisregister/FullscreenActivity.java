@@ -64,7 +64,7 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
  * An example full-screen activity that shows and hides the system UI (i.e.
  * status bar and navigation/system bar) with user interaction.
  */
-public class FullscreenActivity extends AppCompatActivity {
+public class FullscreenActivity extends Activity {
 
     private SharedPreferences.OnSharedPreferenceChangeListener prefListener;
 
@@ -82,8 +82,8 @@ public class FullscreenActivity extends AppCompatActivity {
 
     private static final int CHARGE_REQUEST_CODE = 1;
 
-    private final String DEFAULT_BASE_URL = "http://dawningbrooke.net/apis";
-    private  String base_url = "http://dawningbrooke.net/apis";
+    private final String DEFAULT_BASE_URL = "https://furthemore.org/apis";
+    private  String base_url = "https://furthemore.org/apis";
 
     private PosClient posClient;
 
@@ -516,7 +516,7 @@ public class FullscreenActivity extends AppCompatActivity {
         }
 
         ChargeRequest request = new ChargeRequest.Builder(dollarAmount, CurrencyCode.USD)
-                .note("note")
+                .note(getNote())
                 .autoReturn(3_200, MILLISECONDS)
                 .restrictTendersTo(tenderTypes)
                 .requestMetadata(this.getReference())
@@ -533,14 +533,14 @@ public class FullscreenActivity extends AppCompatActivity {
     }
 
     protected void completeTransaction(String reference, String clientTransactionId, String serverTransactionId) {
-        String url = base_url + "/registration/firebase/register";
+        String url = base_url + "/registration/onsite/square/complete";
 
         url += "?reference=" +  reference
                 + "&key=" + BuildConfig.APIS_API_KEY.toString()
                 + "&clientTransactionId=" + clientTransactionId;
 
         if (serverTransactionId != null) {
-            url += "&serverTransactionId";
+            url += "&serverTransactionId="+serverTransactionId;
         }
 
         StringRequest stringRequest = new StringRequest(Request.Method.GET, url, new Response.Listener<String>() {
