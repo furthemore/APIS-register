@@ -6,7 +6,7 @@
 
         <EditTextPreference
             android:defaultValue="http://dawningbrooke.net/apis/registration"
-            android:key="edit_text_preference_1"
+            android:key="base_url"
             android:selectAllOnFocus="true"
             android:singleLine="true"
             android:title="API Base URL" />

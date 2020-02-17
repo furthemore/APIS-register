@@ -82,8 +82,8 @@ public class FullscreenActivity extends Activity {
 
     private static final int CHARGE_REQUEST_CODE = 1;
 
-    private final String DEFAULT_BASE_URL = "https://furthemore.org/apis";
-    private  String base_url = "https://furthemore.org/apis";
+    private final String DEFAULT_BASE_URL = "https://stage.furthemore.org/apis";
+    private  String base_url = "https://stage.furthemore.org/apis";
 
     private PosClient posClient;
 
