@@ -533,7 +533,7 @@ public class FullscreenActivity extends AppCompatActivity {
     }
 
     protected void completeTransaction(String reference, String clientTransactionId, String serverTransactionId) {
-        String url = base_url + "/registration/firebase/register";
+        String url = base_url + "/registration/onsite/square/complete";
 
         url += "?reference=" +  reference
                 + "&key=" + BuildConfig.APIS_API_KEY.toString()
