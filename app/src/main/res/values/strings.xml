@@ -7,15 +7,22 @@
     <string name="title_activity_signature">Signature</string>
     <string name="title_activity_settings">Settings</string>
 
+    <string name="qrScanButton">Provision Settings</string>
+
     <!-- Strings related to Settings -->
 
-    <!-- Example General settings -->
     <string name="pref_header_general">General</string>
 
-    <string name="pref_title_social_recommendations">Enable social recommendations</string>
-    <string name="pref_description_social_recommendations">Recommendations for people to contact
-        based on your message history
-    </string>
-
-    <string name="pref_background_color">#0099cc</string>
+    <string name="pref_background_color">background_color</string>
+    <string name="pref_base_url">base_url</string>
+    <string name="pref_terminal_name">pref_terminal_name</string>
+    <string name="pref_square_client_id">square_client_id</string>
+    <string name="pref_cash_payment">cash_payment</string>
+    <string name="pref_force_location">force_location</string>
+    <string name="pref_location_id">location_id</string>
+    <string name="pref_test_mode">test_mode</string>
+    <string name="pref_foreground_color">foreground_color</string>
+    <string name="pref_webview_url">webview_url</string>
+    <string name="pref_position_closed">position_closed</string>
+    <string name="pref_apis_api_key">apis_api_key</string>
 </resources>

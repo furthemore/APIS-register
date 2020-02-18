@@ -74,6 +74,11 @@ public class PushReceiver extends BroadcastReceiver {
             SharedPreferences.Editor editor = prefs.edit();
             editor.putBoolean("position_closed", false);
             editor.apply();
+
+        } else if ("settings".equals(command)) {
+            // Update terminal settings from JSON
+            String json = intent.getStringExtra("json");
+            this.fa.updateSettingsFromJson(json);
         }
     }
 }
