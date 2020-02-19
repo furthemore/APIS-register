@@ -224,11 +224,18 @@ public class FullscreenActivity extends AppCompatActivity {
             receipt.loadDataWithBaseURL(null, html, "text/html", "utf-8", null);
 
             payment_button.setVisibility(View.GONE);
+            webview.setVisibility(View.VISIBLE);
 
         } else {
-            String url = prefs.getString("webview_url", null);
-            if ((url != null) && (!url.equals(webview.getUrl()))) {
-                webview.loadUrl(url);
+            String url = prefs.getString(getResources().getString(R.string.pref_webview_url), null);
+            if ((url != null) && (!"".equals(url)) && (!"null".equals(url))) {
+                if (!url.equals(webview.getUrl())){
+                    webview.setVisibility(View.VISIBLE);
+                    webview.loadUrl(url);
+                }
+            } else {
+                Log.d("webview", "No webview URL set - hiding");
+                webview.setVisibility(View.GONE);
             }
         }
 
@@ -347,7 +354,7 @@ public class FullscreenActivity extends AppCompatActivity {
             public void onSharedPreferenceChanged(SharedPreferences prefs, String key) {
                 Log.d("ConfigChange", "Configuration change detected for " + key);
                 onUpdate();
-
+                SharedPreferences.Editor editor = prefs.edit();
 
                 if (getResources().getString(R.string.pref_terminal_name).equals(key)) {
                     updateServerRegistration();
@@ -355,6 +362,12 @@ public class FullscreenActivity extends AppCompatActivity {
 
                 if (getResources().getString(R.string.pref_base_url).equals(key)) {
                     base_url = prefs.getString(getResources().getString(R.string.pref_base_url), DEFAULT_BASE_URL);
+                    if ("/".equals(base_url.substring(base_url.length() - 1))) {
+                        base_url = base_url.substring(0, base_url.length() - 1);
+                        editor.putString(getResources().getString(R.string.pref_base_url), base_url);
+                        editor.apply();
+                    }
+                    Log.d("ConfigChange", base_url);
                 }
 
                 if (getResources().getString(R.string.pref_square_client_id).equals(key)) {
@@ -449,12 +462,23 @@ public class FullscreenActivity extends AppCompatActivity {
                 Log.e("tag", "Unable to parse bg: "+e.toString());
             }
 
+            try {
+                boolean closed = config_json.getBoolean("closed");
+                editor.putBoolean(getResources().getString(R.string.pref_position_closed), closed);
+            } catch (Exception e) {
+            }
+
             editor.putInt(getResources().getString(R.string.pref_background_color), bg_color);
 
             editor.putInt(getResources().getString(R.string.pref_foreground_color), fg_color);
 
-            editor.putString(getResources().getString(R.string.pref_webview_url),
-                    config_json.getString("webview"));
+
+            String webview_url = config_json.getString("webview");
+            if (webview_url == null) {
+                webview_url = "";
+            }
+            Log.v("json", webview_url);
+            editor.putString(getResources().getString(R.string.pref_webview_url), webview_url);
 
             editor.apply();
             onUpdate();
@@ -466,8 +490,6 @@ public class FullscreenActivity extends AppCompatActivity {
             return;
         }
 
-        Log.d("tag", prefs.getString(getResources().getString(R.string.pref_webview_url), "default 2"));
-        Log.d("tag", prefs.getString(getResources().getString(R.string.pref_square_client_id), "default 2"));
 
         Toast.makeText(getApplicationContext(), "Settings were provisioned successfully", Toast.LENGTH_LONG).show();
     }

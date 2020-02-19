@@ -79,6 +79,8 @@ public class PushReceiver extends BroadcastReceiver {
             // Update terminal settings from JSON
             String json = intent.getStringExtra("json");
             this.fa.updateSettingsFromJson(json);
+            Log.v("tag", "Server pushed new settings:");
+            Log.v("tag", json);
         }
     }
 }
