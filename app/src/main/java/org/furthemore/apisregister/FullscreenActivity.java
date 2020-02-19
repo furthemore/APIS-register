@@ -5,7 +5,7 @@ import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.ActivityNotFoundException;
-
+import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
@@ -16,15 +16,13 @@ import android.media.Ringtone;
 import android.media.RingtoneManager;
 import android.net.Uri;
 import android.os.AsyncTask;
-import android.os.Looper;
+import android.os.Bundle;
+import android.os.Handler;
 import android.preference.PreferenceManager;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
-import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
-import android.os.Bundle;
-import android.os.Handler;
 import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
@@ -33,8 +31,6 @@ import android.widget.Button;
 import android.widget.TextClock;
 import android.widget.Toast;
 
-
-import com.android.volley.AuthFailureError;
 import com.android.volley.NetworkResponse;
 import com.android.volley.Request;
 import com.android.volley.Response;
@@ -43,17 +39,15 @@ import com.android.volley.toolbox.HttpHeaderParser;
 import com.android.volley.toolbox.StringRequest;
 import com.squareup.sdk.pos.ChargeRequest;
 import com.squareup.sdk.pos.CurrencyCode;
-import com.squareup.sdk.pos.PosSdk;
 import com.squareup.sdk.pos.PosClient;
+import com.squareup.sdk.pos.PosSdk;
 
-import java.io.IOException;
-import java.net.HttpURLConnection;
-import java.net.MalformedURLException;
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import java.net.URL;
 import java.net.URLEncoder;
 import java.util.EnumSet;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Set;
 
 import me.pushy.sdk.Pushy;
@@ -64,7 +58,7 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
  * An example full-screen activity that shows and hides the system UI (i.e.
  * status bar and navigation/system bar) with user interaction.
  */
-public class FullscreenActivity extends Activity {
+public class FullscreenActivity extends AppCompatActivity {
 
     private SharedPreferences.OnSharedPreferenceChangeListener prefListener;
 
@@ -81,9 +75,12 @@ public class FullscreenActivity extends Activity {
     private static final int AUTO_HIDE_DELAY_MILLIS = 3000;
 
     private static final int CHARGE_REQUEST_CODE = 1;
+    static final int REQUEST_QR_CODE_JSON = 2;
 
-    private final String DEFAULT_BASE_URL = "https://stage.furthemore.org/apis";
-    private  String base_url = "https://stage.furthemore.org/apis";
+    private final String DEFAULT_BASE_URL = "http://dawningbrooke.net/apis";
+    private String base_url = "http://dawningbrooke.net/apis";
+
+    private String apis_api_key = BuildConfig.APIS_API_KEY;
 
     private PosClient posClient;
 
@@ -91,6 +88,8 @@ public class FullscreenActivity extends Activity {
 
     private String note = "";
     private int charge_total = 0;
+
+    SharedPreferences prefs;
 
     public String getReference() {
         return reference;
@@ -175,8 +174,7 @@ public class FullscreenActivity extends Activity {
     protected void setHtml(String html) {
         this.html = html;
 
-        SharedPreferences prefs =
-                PreferenceManager.getDefaultSharedPreferences(getBaseContext());
+
         WebView receipt = findViewById(R.id.receipt_view);
         html = formatHTML(prefs, this.html);
         receipt.loadDataWithBaseURL(null, html, "text/html", "utf-8", null);
@@ -198,11 +196,10 @@ public class FullscreenActivity extends Activity {
         this.charge_total = charge_total;
     }
 
+
     protected void onUpdate() {
         // Handle updating of preferences and settings
 
-        SharedPreferences prefs =
-                PreferenceManager.getDefaultSharedPreferences(getBaseContext());
         int background_color = prefs.getInt("background_color", Color.parseColor("#0099cc"));
         findViewById(R.id.fullscreen_content).setBackgroundColor(background_color);
 
@@ -227,11 +224,18 @@ public class FullscreenActivity extends Activity {
             receipt.loadDataWithBaseURL(null, html, "text/html", "utf-8", null);
 
             payment_button.setVisibility(View.GONE);
+            webview.setVisibility(View.VISIBLE);
 
         } else {
-            String url = prefs.getString("webview_url", null);
-            if ((url != null) && (!url.equals(webview.getUrl()))){
-                webview.loadUrl(url);
+            String url = prefs.getString(getResources().getString(R.string.pref_webview_url), null);
+            if ((url != null) && (!"".equals(url)) && (!"null".equals(url))) {
+                if (!url.equals(webview.getUrl())){
+                    webview.setVisibility(View.VISIBLE);
+                    webview.loadUrl(url);
+                }
+            } else {
+                Log.d("webview", "No webview URL set - hiding");
+                webview.setVisibility(View.GONE);
             }
         }
 
@@ -244,7 +248,7 @@ public class FullscreenActivity extends Activity {
         String fgcolor = String.format("#%06X", (0xFFFFFF & foreground_color));
 
         String html = "<html><head>" +
-                "</head><body bgcolor='" + bgcolor + "' style='color: " + fgcolor+ "'>" +
+                "</head><body bgcolor='" + bgcolor + "' style='color: " + fgcolor + "'>" +
                 body + "</body></html>";
 
         return html;
@@ -261,17 +265,14 @@ public class FullscreenActivity extends Activity {
 
                 String url = base_url + "/registration/firebase/register";
 
-                SharedPreferences prefs =
-                        PreferenceManager.getDefaultSharedPreferences(getBaseContext());
                 final String terminal_name = URLEncoder.encode(prefs.getString("terminal_name", "Unnamed"));
 
                 // this doesn't seem to work - defer registration until the name is set
                 new URL(url + "?token=" + deviceToken
-                            + "&key=" + BuildConfig.APIS_API_KEY.toString()
-                            + "&name=" + terminal_name).openConnection();
+                        + "&key=" + BuildConfig.APIS_API_KEY.toString()
+                        + "&name=" + terminal_name).openConnection();
 
-            }
-            catch (Exception exc) {
+            } catch (Exception exc) {
                 // Return exc to onPostExecute
                 return exc;
             }
@@ -293,12 +294,30 @@ public class FullscreenActivity extends Activity {
         }
     }
 
+    public void scanQrCode(View v) {
+        String [] permissions = {Manifest.permission.CAMERA};
+        int permissions_results = 0;
+
+        ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.CAMERA);
+        ActivityCompat.requestPermissions(this, permissions, permissions_results);
+        int camerapermission = ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA);
+
+        if (camerapermission == PackageManager.PERMISSION_GRANTED) {
+            Intent intent = new Intent(FullscreenActivity.this, ScanActivity.class);
+            startActivityForResult(intent, REQUEST_QR_CODE_JSON);
+        } else {
+            Toast.makeText(getApplicationContext(), "Camera permissions denied.", Toast.LENGTH_LONG).show();
+        }
+    }
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        this.prefs = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
+
         super.onCreate(savedInstanceState);
 
         // Dynamically create the PushReceiver so that the main activity is accessible to it
-        pushreceiver= new PushReceiver();
+        pushreceiver = new PushReceiver();
         pushreceiver.setActivityHandler(this);
         IntentFilter filter = new IntentFilter();
         filter.addAction("pushy.me");
@@ -329,30 +348,41 @@ public class FullscreenActivity extends Activity {
         PreferenceManager.setDefaultValues(this, R.xml.preferences, false);
         onUpdate();
 
+        apis_api_key = prefs.getString(getResources().getString(R.string.pref_apis_api_key), BuildConfig.APIS_API_KEY);
 
-        SharedPreferences prefs =
-                PreferenceManager.getDefaultSharedPreferences(getBaseContext());
         prefListener = new SharedPreferences.OnSharedPreferenceChangeListener() {
             public void onSharedPreferenceChanged(SharedPreferences prefs, String key) {
                 Log.d("ConfigChange", "Configuration change detected for " + key);
                 onUpdate();
+                SharedPreferences.Editor editor = prefs.edit();
 
-                if ("terminal_name".equals(key)) {
-                    // Update the server with the pushy token and new terminal name
-                    String terminalName = prefs.getString("terminal_name", "Unnamed");
-                    String deviceToken = prefs.getString("pushyToken", "NO_TOKEN");
-
-                    registerWithServer(deviceToken, terminalName);
+                if (getResources().getString(R.string.pref_terminal_name).equals(key)) {
+                    updateServerRegistration();
                 }
 
-                if ("base_url".equals(key)) {
-                    base_url = prefs.getString("base_url", DEFAULT_BASE_URL);
+                if (getResources().getString(R.string.pref_base_url).equals(key)) {
+                    base_url = prefs.getString(getResources().getString(R.string.pref_base_url), DEFAULT_BASE_URL);
+                    if ("/".equals(base_url.substring(base_url.length() - 1))) {
+                        base_url = base_url.substring(0, base_url.length() - 1);
+                        editor.putString(getResources().getString(R.string.pref_base_url), base_url);
+                        editor.apply();
+                    }
+                    Log.d("ConfigChange", base_url);
+                }
+
+                if (getResources().getString(R.string.pref_square_client_id).equals(key)) {
+                    posClient = PosSdk.createClient(getBaseContext(), prefs.getString("square_client_id", BuildConfig.SQUARE_CLIENT_ID));
+                }
+
+                if (getResources().getString(R.string.pref_apis_api_key).equals(key)) {
+                    apis_api_key = prefs.getString(getResources().getString(R.string.pref_apis_api_key), BuildConfig.APIS_API_KEY);
+                    updateServerRegistration();
                 }
             }
         };
         prefs.registerOnSharedPreferenceChangeListener(prefListener);
 
-        this.base_url = prefs.getString("base_url", DEFAULT_BASE_URL);
+        this.base_url = prefs.getString(getResources().getString(R.string.pref_base_url), DEFAULT_BASE_URL);
 
 
         // Set up the user interaction to manually show or hide the system UI.
@@ -368,18 +398,116 @@ public class FullscreenActivity extends Activity {
         // while interacting with the UI.
         findViewById(R.id.dummy_button).setOnTouchListener(mDelayHideTouchListener);
 
-        posClient = PosSdk.createClient(this, BuildConfig.SQUARE_CLIENT_ID);
+        posClient = PosSdk.createClient(this, prefs.getString("square_client_id", BuildConfig.SQUARE_CLIENT_ID));
 
         WebView webview = findViewById(R.id.web_view);
         webview.getSettings().setJavaScriptEnabled(true);
 
     }
 
+    public void updateSettingsFromJson(String json) {
+        SharedPreferences.Editor editor = prefs.edit();
+
+        /*  Example settings JSON format
+
+            {
+              "v": 1,
+              "client_id": "sq0idp-xxxxxxxxxxxxxxxxxxxxxx",
+              "api_key": "b7b86d4d44743772532705d5d1d1e673",
+              "endpoint": "https://stage.furthemore.org/apis",
+              "name" : "Terminal 1,
+              "location_id": "ABCDEFGHIJK",
+              "force_location": true,
+              "bg": "#0099cc",
+              "fg": "#ffffff",
+              "webview": "https://www.furthemore.org/code-of-conduct-embed/",
+            }
+
+         */
+
+        try {
+            JSONObject config_json = new JSONObject(json);
+            int version = config_json.getInt("v");
+            if (version != 1) {
+                throw new JSONException("Incorrect version: "+version);
+            }
+
+            editor.putString(getResources().getString(R.string.pref_square_client_id),
+                    config_json.getString("client_id"));
+            editor.putString(getResources().getString(R.string.pref_base_url),
+                    config_json.getString("endpoint"));
+            editor.putString(getResources().getString(R.string.pref_apis_api_key),
+                    config_json.getString("api_key"));
+            editor.putString(getResources().getString(R.string.pref_terminal_name),
+                    config_json.getString("name"));
+            editor.putString(getResources().getString(R.string.pref_location_id),
+                    config_json.getString("location_id"));
+            editor.putBoolean(getResources().getString(R.string.pref_force_location),
+                    config_json.getBoolean("force_location"));
+
+            String fg_color_string = config_json.getString("fg");
+            int fg_color = prefs.getInt(getResources().getString(R.string.pref_foreground_color), 0);
+            try {
+                fg_color = Color.parseColor(fg_color_string);
+            } catch (IllegalArgumentException e) {
+                Log.e("tag", "Unable to parse fg: "+e.toString());
+            }
+
+            String bg_color_string = config_json.getString("bg");
+            int bg_color = prefs.getInt(getResources().getString(R.string.pref_background_color), 0);
+
+            try {
+                bg_color = Color.parseColor(bg_color_string);
+            } catch (IllegalArgumentException e) {
+                Log.e("tag", "Unable to parse bg: "+e.toString());
+            }
+
+            try {
+                boolean closed = config_json.getBoolean("closed");
+                editor.putBoolean(getResources().getString(R.string.pref_position_closed), closed);
+            } catch (Exception e) {
+            }
+
+            editor.putInt(getResources().getString(R.string.pref_background_color), bg_color);
+
+            editor.putInt(getResources().getString(R.string.pref_foreground_color), fg_color);
+
+
+            String webview_url = config_json.getString("webview");
+            if (webview_url == null) {
+                webview_url = "";
+            }
+            Log.v("json", webview_url);
+            editor.putString(getResources().getString(R.string.pref_webview_url), webview_url);
+
+            editor.apply();
+            onUpdate();
+
+        } catch (JSONException e) {
+            Log.e("json", "Problem while decoding QR code settings");
+            Log.e("json", e.getMessage());
+            Toast.makeText(getApplicationContext(), "QR Code did not contain settings we understood", Toast.LENGTH_LONG).show();
+            return;
+        }
+
+
+        Toast.makeText(getApplicationContext(), "Settings were provisioned successfully", Toast.LENGTH_LONG).show();
+    }
+
+    protected void updateServerRegistration() {
+
+        // Update the server with the pushy token and new terminal name
+        String terminalName = prefs.getString(getResources().getString(R.string.pref_terminal_name), "Unnamed");
+        String deviceToken = prefs.getString("pushyToken", "NO_TOKEN");
+
+        registerWithServer(deviceToken, terminalName);
+    }
+
     protected void registerWithServer(String token, String name) {
         String url = base_url + "/registration/firebase/register";
 
         url += "?token=" + token
-                + "&key=" + BuildConfig.APIS_API_KEY.toString()
+                + "&key=" + apis_api_key
                 + "&name=" + name;
 
         StringRequest stringRequest = new StringRequest(Request.Method.GET, url, new Response.Listener<String>() {
@@ -456,7 +584,7 @@ public class FullscreenActivity extends Activity {
                 | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION);
         mVisible = true;
 
-        // Schedule a runnable to display UI elements after a delay
+        // Schedule a runnable to display UI elements after a delayf
         mHideHandler.removeCallbacks(mHidePart2Runnable);
         mHideHandler.postDelayed(mShowPart2Runnable, UI_ANIMATION_DELAY);
     }
@@ -487,8 +615,6 @@ public class FullscreenActivity extends Activity {
 
     public void testSquareCharge(View view) {
         int total = this.getCharge_total();
-        SharedPreferences prefs =
-                PreferenceManager.getDefaultSharedPreferences(getBaseContext());
 
         boolean test_mode = prefs.getBoolean("test_mode", false);
         if (test_mode) {
@@ -500,8 +626,6 @@ public class FullscreenActivity extends Activity {
 
     public void startTransaction(int dollarAmount, String note) {
         Set<ChargeRequest.TenderType> tenderTypes = EnumSet.noneOf(ChargeRequest.TenderType.class);
-        SharedPreferences prefs =
-                PreferenceManager.getDefaultSharedPreferences(getBaseContext());
 
         tenderTypes.add(ChargeRequest.TenderType.CARD);
         boolean allow_cash = prefs.getBoolean("cash_payment", false);
@@ -516,7 +640,7 @@ public class FullscreenActivity extends Activity {
         }
 
         ChargeRequest request = new ChargeRequest.Builder(dollarAmount, CurrencyCode.USD)
-                .note(getNote())
+                .note("note")
                 .autoReturn(3_200, MILLISECONDS)
                 .restrictTendersTo(tenderTypes)
                 .requestMetadata(this.getReference())
@@ -535,12 +659,12 @@ public class FullscreenActivity extends Activity {
     protected void completeTransaction(String reference, String clientTransactionId, String serverTransactionId) {
         String url = base_url + "/registration/onsite/square/complete";
 
-        url += "?reference=" +  reference
+        url += "?reference=" + reference
                 + "&key=" + BuildConfig.APIS_API_KEY.toString()
                 + "&clientTransactionId=" + clientTransactionId;
 
         if (serverTransactionId != null) {
-            url += "&serverTransactionId="+serverTransactionId;
+            url += "&serverTransactionId";
         }
 
         StringRequest stringRequest = new StringRequest(Request.Method.GET, url, new Response.Listener<String>() {
@@ -581,7 +705,8 @@ public class FullscreenActivity extends Activity {
         startActivity(i);
     }
 
-    @Override protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
         if (requestCode == CHARGE_REQUEST_CODE) {
             if (data == null) {
@@ -612,6 +737,12 @@ public class FullscreenActivity extends Activity {
                     showDialog("Error: " + error.code, error.debugDescription, null);
                 }
             }
+
+        } else if (requestCode == REQUEST_QR_CODE_JSON) {
+            if (resultCode == Activity.RESULT_OK) {
+                updateSettingsFromJson(data.getStringExtra("text"));
+            }
         }
     }
+
 }

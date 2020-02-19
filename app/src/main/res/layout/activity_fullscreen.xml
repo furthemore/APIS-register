@@ -24,7 +24,8 @@
             android:id="@+id/web_view"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:layout_weight="2" />
+            android:layout_weight="2"
+            android:visibility="visible" />
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -83,14 +84,32 @@
             android:orientation="vertical">
 
             <Button
-                android:id="@+id/dummy_button"
-                style="@style/Widget.AppCompat.Button.Borderless.Colored"
+                android:id="@+id/scan_button"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:autoText="false"
+                android:onClick="scanQrCode"
+                android:text="Import Settings" />
+
+            <Button
+                android:id="@+id/dummy_button"
+                style="@android:style/Widget.Button"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
                 android:onClick="openSettings"
                 android:text="@string/dummy_button" />
+
+            <Button
+                android:id="@+id/button"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_weight="1" />
+
+            <Space
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_weight="1" />
 
         </LinearLayout>
 
