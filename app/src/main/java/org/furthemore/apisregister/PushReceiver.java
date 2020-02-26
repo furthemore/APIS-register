@@ -58,7 +58,11 @@ public class PushReceiver extends BroadcastReceiver {
         } else if ("process_payment".equals(command)) {
             // Immediately trigger a Square charge
             String note = intent.getStringExtra("note");
-            int amount = intent.getIntExtra("total", 0);
+            if (note == null) {
+                note = this.fa.getNote();
+            }
+            int amount = intent.getIntExtra("total", this.fa.getCharge_total());
+
             this.fa.startTransaction(amount, note);
 
         } else if ("close".equals(command)) {

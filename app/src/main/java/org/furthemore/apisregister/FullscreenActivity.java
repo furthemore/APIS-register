@@ -639,11 +639,17 @@ public class FullscreenActivity extends AppCompatActivity {
             location_id = "";
         }
 
+        boolean test_mode = prefs.getBoolean("test_mode", false);
+        if (test_mode) {
+            dollarAmount = 1_00;
+        }
+
         ChargeRequest request = new ChargeRequest.Builder(dollarAmount, CurrencyCode.USD)
-                .note("note")
+                .note(note)
                 .autoReturn(3_200, MILLISECONDS)
                 .restrictTendersTo(tenderTypes)
                 .requestMetadata(this.getReference())
+                .enforceBusinessLocation(location_id)
                 .build();
 
         try {
@@ -659,12 +665,14 @@ public class FullscreenActivity extends AppCompatActivity {
     protected void completeTransaction(String reference, String clientTransactionId, String serverTransactionId) {
         String url = base_url + "/registration/onsite/square/complete";
 
+        apis_api_key = prefs.getString(getResources().getString(R.string.pref_apis_api_key), BuildConfig.APIS_API_KEY);
+
         url += "?reference=" + reference
-                + "&key=" + BuildConfig.APIS_API_KEY.toString()
+                + "&key=" + apis_api_key
                 + "&clientTransactionId=" + clientTransactionId;
 
         if (serverTransactionId != null) {
-            url += "&serverTransactionId";
+            url += "&serverTransactionId=" + serverTransactionId;
         }
 
         StringRequest stringRequest = new StringRequest(Request.Method.GET, url, new Response.Listener<String>() {
