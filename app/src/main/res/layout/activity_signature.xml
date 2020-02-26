@@ -23,12 +23,13 @@
         <TextView
             android:id="@+id/signature_pad_description"
             android:layout_width="wrap_content"
-            android:layout_centerHorizontal="true"
             android:layout_height="wrap_content"
-            android:textColor="@android:color/darker_gray"
-            android:layout_marginBottom="16dp"
             android:layout_alignParentBottom="true"
-            android:text="Some agreement text here" />
+            android:layout_centerHorizontal="true"
+            android:layout_marginBottom="16dp"
+            android:text="I agree to the terms and conditions"
+            android:textColor="@android:color/darker_gray"
+            android:textSize="18sp" />
 
         <com.github.gcacace.signaturepad.views.SignaturePad
             xmlns:android="http://schemas.android.com/apk/res/android"
@@ -47,6 +48,13 @@
         android:layout_height="wrap_content"
         android:orientation="horizontal"
         android:layout_alignParentBottom="true">
+
+        <Button
+            android:id="@+id/cancel_button"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Cancel" />
 
         <Button
             android:id="@+id/clear_button"

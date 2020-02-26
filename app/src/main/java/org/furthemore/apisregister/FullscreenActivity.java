@@ -610,6 +610,7 @@ public class FullscreenActivity extends AppCompatActivity {
     public void getSignature(View view) {
         // do something when the button's pressed.
         Intent intent = new Intent(this, Signature.class);
+        intent.putExtra("text", "I agree to the attendee code of conduct");
         startActivity(intent);
     }
 
