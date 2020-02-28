@@ -1,6 +1,8 @@
 package org.furthemore.apisregister;
 
+import android.app.Activity;
 import android.content.Intent;
+import android.graphics.Bitmap;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
@@ -9,16 +11,27 @@ import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.android.volley.NetworkResponse;
+import com.android.volley.Request;
+import com.android.volley.Response;
+import com.android.volley.VolleyError;
+import com.android.volley.toolbox.HttpHeaderParser;
+import com.android.volley.toolbox.StringRequest;
 import com.github.gcacace.signaturepad.views.SignaturePad;
+
+import java.io.ByteArrayOutputStream;
 
 public class Signature extends AppCompatActivity {
 
     private View mContentView;
     private SignaturePad mSignaturePad;
     private TextView mAgreementText;
+    private TextView mNameText;
     private Button mCancelButton;
     private Button mClearButton;
     private Button mSaveButton;
+
+    private int badgeId;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -54,11 +67,19 @@ public class Signature extends AppCompatActivity {
         });
 
         mAgreementText = (TextView) findViewById(R.id.signature_pad_description);
+        mNameText = (TextView) findViewById(R.id.signature_pad_name);
 
-        String agreement = getIntent().getStringExtra("text");
+        String agreement = getIntent().getStringExtra("agreement");
         if (agreement != null) {
             mAgreementText.setText(agreement);
         }
+
+        String name_text = getIntent().getStringExtra("name");
+        if (name_text != null) {
+            mNameText.setText(name_text);
+        }
+
+        badgeId = getIntent().getIntExtra("badge_id", -1);
 
         mCancelButton = (Button) findViewById(R.id.cancel_button);
         mClearButton = (Button) findViewById(R.id.clear_button);
@@ -67,7 +88,9 @@ public class Signature extends AppCompatActivity {
         mCancelButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                onBackPressed();
+                setResult(Activity.RESULT_CANCELED);
+                finish();
+                //onBackPressed();
             }
         });
 
@@ -84,8 +107,21 @@ public class Signature extends AppCompatActivity {
                 //mSignaturePad.clear();
                 Log.d("signature", mSignaturePad.getSignatureSvg());
 
-                //finish();
-                onBackPressed();
+
+                Intent resultIntent = new Intent();
+                resultIntent.putExtra("signature_svg", mSignaturePad.getSignatureSvg());
+
+                ByteArrayOutputStream stream = new ByteArrayOutputStream();
+                mSignaturePad.getSignatureBitmap().compress(Bitmap.CompressFormat.PNG, 90, stream);
+                byte[] bytes = stream.toByteArray();
+
+                resultIntent.putExtra("signature_bmp", bytes);
+
+                Log.d("signature", "Finish intent RESULT_OK");
+                setResult(Activity.RESULT_OK, resultIntent);
+                finish();
+
+                //onBackPressed();
             }
         });
     }

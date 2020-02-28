@@ -76,6 +76,7 @@ public class FullscreenActivity extends AppCompatActivity {
 
     private static final int CHARGE_REQUEST_CODE = 1;
     static final int REQUEST_QR_CODE_JSON = 2;
+    static final int REQUEST_SIGNATURE_CODE = 4;
 
     private final String DEFAULT_BASE_URL = "http://dawningbrooke.net/apis";
     private String base_url = "http://dawningbrooke.net/apis";
@@ -606,11 +607,20 @@ public class FullscreenActivity extends AppCompatActivity {
         super.onDestroy();
     }
 
+    public void getSignatureForBadge(int badgeId, String name, String agreement) {
+        Intent intent = new Intent(this, Signature.class);
+        intent.putExtra("agreement", agreement);
+        intent.putExtra("name", name);
+        intent.putExtra("badge_id", badgeId);
+        startActivityForResult(intent, REQUEST_SIGNATURE_CODE);
+    }
 
     public void getSignature(View view) {
         // do something when the button's pressed.
         Intent intent = new Intent(this, Signature.class);
-        intent.putExtra("text", "I agree to the attendee code of conduct");
+        intent.putExtra("agreement", "I agree to the attendee code of conduct");
+        intent.putExtra("name", "Kasper Finch");
+        intent.putExtra("badge_id", -1);
         startActivity(intent);
     }
 
@@ -701,6 +711,44 @@ public class FullscreenActivity extends AppCompatActivity {
         MySingleton.getInstance(this).addToRequestQueue(stringRequest);
     }
 
+    protected void uploadSignature(String reference, String clientTransactionId, String serverTransactionId) {
+        String url = base_url + "/registration/onsite/square/complete";
+
+        apis_api_key = prefs.getString(getResources().getString(R.string.pref_apis_api_key), BuildConfig.APIS_API_KEY);
+
+        url += "?reference=" + reference
+                + "&key=" + apis_api_key
+                + "&clientTransactionId=" + clientTransactionId;
+
+        if (serverTransactionId != null) {
+            url += "&serverTransactionId=" + serverTransactionId;
+        }
+
+        StringRequest stringRequest = new StringRequest(Request.Method.GET, url, new Response.Listener<String>() {
+            @Override
+            public void onResponse(String response) {
+                Log.i("VOLLEY", response);
+            }
+        }, new Response.ErrorListener() {
+            @Override
+            public void onErrorResponse(VolleyError error) {
+                Log.e("VOLLEY", error.toString());
+            }
+        }) {
+            @Override
+            protected Response<String> parseNetworkResponse(NetworkResponse response) {
+                String responseString = "";
+                if (response != null) {
+                    responseString = String.valueOf(response.statusCode);
+                    Log.d("CompleteTransaction", "Complete transaction server response: " + responseString);
+                }
+                return Response.success(responseString, HttpHeaderParser.parseCacheHeaders(response));
+            }
+        };
+
+        MySingleton.getInstance(this).addToRequestQueue(stringRequest);
+    }
+
     private void showDialog(String title, String message, DialogInterface.OnClickListener listener) {
         Log.d("ChargeActivity", title + " " + message);
         new AlertDialog.Builder(this).setTitle(title)
@@ -750,6 +798,11 @@ public class FullscreenActivity extends AppCompatActivity {
         } else if (requestCode == REQUEST_QR_CODE_JSON) {
             if (resultCode == Activity.RESULT_OK) {
                 updateSettingsFromJson(data.getStringExtra("text"));
+            }
+
+        } else if (requestCode == REQUEST_SIGNATURE_CODE) {
+            if (resultCode == Activity.RESULT_OK) {
+
             }
         }
     }

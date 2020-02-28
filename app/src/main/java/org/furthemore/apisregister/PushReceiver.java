@@ -85,6 +85,14 @@ public class PushReceiver extends BroadcastReceiver {
             this.fa.updateSettingsFromJson(json);
             Log.v("tag", "Server pushed new settings:");
             Log.v("tag", json);
+        } else if ("signature".equals(command)) {
+            Log.d("signature", "Prompting for signature for badge");
+            int badgeId = intent.getIntExtra("badge_id", -1);
+            String name = intent.getStringExtra("name");
+            String agreement = intent.getStringExtra("agreement");
+            Log.d("signature", "id: "+ badgeId);
+            Log.d("signature", "name: " + name);
+            this.fa.getSignatureForBadge(badgeId, name, agreement);
         }
     }
 }
