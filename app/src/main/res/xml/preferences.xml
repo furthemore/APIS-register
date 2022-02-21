@@ -5,7 +5,7 @@
         android:key="general_settings">
 
         <EditTextPreference
-            android:defaultValue="https://www.furthemore.org/apis/"
+            android:defaultValue="https://registration.furthemore.org/apis/"
             android:key="@string/pref_base_url"
             android:selectAllOnFocus="true"
             android:singleLine="true"
@@ -17,7 +17,7 @@
             android:singleLine="true"
             android:title="Terminal Name" />
         <EditTextPreference
-            android:defaultValue="sq0idp-OXSXy74X_vCYU85nx7Bcdw"
+            android:defaultValue="sq0idp-40mIl1Hc1ccQ3u9YKQ4_0A"
             android:key="@string/pref_square_client_id"
             android:selectAllOnFocus="true"
             android:singleLine="true"
