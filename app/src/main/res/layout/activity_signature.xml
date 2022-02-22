@@ -10,7 +10,6 @@
     <RelativeLayout
         android:layout_width="fill_parent"
         android:layout_height="fill_parent"
-        android:layout_above="@+id/buttons_container"
         android:id="@+id/signature_pad_container">
 
         <FrameLayout

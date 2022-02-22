@@ -40,6 +40,7 @@
             android:defaultValue="false"
             android:key="@string/pref_test_mode"
             android:title="Transaction test mode ($1 transactions)" />
+        <!--
         <com.rarepebble.colorpicker.ColorPreference
             android:defaultValue="#0099cc"
             colorpicker_showAlpha="false"
@@ -50,6 +51,7 @@
             colorpicker_showAlpha="false"
             android:key="@string/pref_foreground_color"
             android:title="Foreground Color" />
+        -->
         <EditTextPreference
             android:defaultValue="https://www.furthemore.org/code-of-conduct-embed/"
             android:key="@string/pref_webview_url"

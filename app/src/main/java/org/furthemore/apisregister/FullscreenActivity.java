@@ -261,7 +261,7 @@ public class FullscreenActivity extends AppCompatActivity {
                 final String deviceToken = Pushy.register(getApplicationContext());
 
                 // Log it for debugging purposes
-                Log.d("MyApp", "Pushy device token: " + deviceToken);
+                Log.d("APIS", "Pushy device token: " + deviceToken);
 
                 String url = base_url + "/registration/firebase/register";
 
