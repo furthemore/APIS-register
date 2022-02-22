@@ -5,7 +5,7 @@
         android:key="general_settings">
 
         <EditTextPreference
-            android:defaultValue="https://www.furthemore.org/apis/"
+            android:defaultValue="https://registration.furthemore.org/apis/"
             android:key="@string/pref_base_url"
             android:selectAllOnFocus="true"
             android:singleLine="true"
@@ -17,7 +17,7 @@
             android:singleLine="true"
             android:title="Terminal Name" />
         <EditTextPreference
-            android:defaultValue="sq0idp-OXSXy74X_vCYU85nx7Bcdw"
+            android:defaultValue="sq0idp-40mIl1Hc1ccQ3u9YKQ4_0A"
             android:key="@string/pref_square_client_id"
             android:selectAllOnFocus="true"
             android:singleLine="true"
@@ -40,6 +40,7 @@
             android:defaultValue="false"
             android:key="@string/pref_test_mode"
             android:title="Transaction test mode ($1 transactions)" />
+        <!--
         <com.rarepebble.colorpicker.ColorPreference
             android:defaultValue="#0099cc"
             colorpicker_showAlpha="false"
@@ -50,6 +51,7 @@
             colorpicker_showAlpha="false"
             android:key="@string/pref_foreground_color"
             android:title="Foreground Color" />
+        -->
         <EditTextPreference
             android:defaultValue="https://www.furthemore.org/code-of-conduct-embed/"
             android:key="@string/pref_webview_url"
