@@ -258,19 +258,17 @@ public class FullscreenActivity extends AppCompatActivity {
         protected Exception doInBackground(Void... params) {
             try {
                 // Assign a unique token to this device
-                final String deviceToken = Pushy.register(getApplicationContext());
+                final String deviceToken = Pushy.register(FullscreenActivity.this);
 
                 // Log it for debugging purposes
                 Log.d("APIS", "Pushy device token: " + deviceToken);
 
                 String url = base_url + "/registration/firebase/register";
 
-                final String terminal_name = URLEncoder.encode(prefs.getString("terminal_name", "Unnamed"));
+                final String terminal_name = URLEncoder.encode(prefs.getString("terminal_name", "Unnamed"), "utf-8");
 
                 // this doesn't seem to work - defer registration until the name is set
-                new URL(url + "?token=" + deviceToken
-                        + "&key=" + BuildConfig.APIS_API_KEY.toString()
-                        + "&name=" + terminal_name).openConnection();
+                registerWithServer(deviceToken, terminal_name);
 
             } catch (Exception exc) {
                 // Return exc to onPostExecute
@@ -797,6 +795,7 @@ public class FullscreenActivity extends AppCompatActivity {
         } else if (requestCode == REQUEST_QR_CODE_JSON) {
             if (resultCode == Activity.RESULT_OK) {
                 updateSettingsFromJson(data.getStringExtra("text"));
+                updateServerRegistration();
             }
 
         } else if (requestCode == REQUEST_SIGNATURE_CODE) {
