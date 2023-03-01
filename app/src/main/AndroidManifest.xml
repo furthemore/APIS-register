@@ -101,4 +101,8 @@
         <!-- End Pushy Declarations -->
     </application>
 
+    <queries>
+        <package android:name="com.squareup" />
+    </queries>
+
 </manifest>
