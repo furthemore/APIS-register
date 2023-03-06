@@ -49,6 +49,7 @@ import com.squareup.sdk.pos.PosSdk;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.io.UnsupportedEncodingException;
 import java.net.URL;
 import java.net.URLEncoder;
 import java.util.EnumSet;
@@ -763,26 +764,27 @@ public class FullscreenActivity extends AppCompatActivity {
         String url = base_url + "/registration/onsite/square/complete";
 
         apis_api_key = prefs.getString(getResources().getString(R.string.pref_apis_api_key), BuildConfig.APIS_API_KEY);
+        String terminal_name;
+        try {
+            terminal_name = URLEncoder.encode(prefs.getString(getResources().getString(R.string.pref_terminal_name), "Unnamed"), "utf-8");
+        } catch (UnsupportedEncodingException e) {
+            terminal_name = "EncodingError";
+        }
 
         url += "?reference=" + reference
                 + "&key=" + apis_api_key
+                + "&terminal=" + terminal_name
                 + "&clientTransactionId=" + clientTransactionId;
 
         if (serverTransactionId != null) {
             url += "&serverTransactionId=" + serverTransactionId;
         }
 
-        StringRequest stringRequest = new StringRequest(Request.Method.GET, url, new Response.Listener<String>() {
-            @Override
-            public void onResponse(String response) {
-                Log.i("VOLLEY", response);
-            }
-        }, new Response.ErrorListener() {
-            @Override
-            public void onErrorResponse(VolleyError error) {
-                Log.e("VOLLEY", error.toString());
-            }
-        }) {
+        StringRequest stringRequest = new StringRequest(
+                Request.Method.GET,
+                url,
+                response -> Log.i("VOLLEY", response),
+                error -> Log.e("VOLLEY", error.toString())) {
             @Override
             protected Response<String> parseNetworkResponse(NetworkResponse response) {
                 String responseString = "";

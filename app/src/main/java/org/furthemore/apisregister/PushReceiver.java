@@ -23,9 +23,6 @@ public class PushReceiver extends BroadcastReceiver {
     @Override
     public void onReceive(Context context, Intent intent) {
         intent.getStringExtra("message");
-
         LocalBroadcastManager.getInstance(context).sendBroadcast(intent);
-
-
     }
 }
